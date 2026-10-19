@@ -65,6 +65,64 @@ def word_note(stats, w):
             f'sensational {stats["fake_pct"][i]:.1f}%)</small>')
 
 
+def overall_summary(wire_words, sens_words, p_real, stats):
+    """Plain-language explanation (HTML, single line) of why the model leaned to one side."""
+    real_pct, fake_pct = round(p_real * 100), round((1 - p_real) * 100)
+
+    def reason(w, side):
+        if stats is None or w not in stats["index"]:
+            return f"<b>&ldquo;{w}&rdquo;</b> was one of the strongest signals towards {side} style."
+        i = stats["index"][w]
+        r, f = stats["real_pct"][i], stats["fake_pct"][i]
+        if side == "wire":
+            return (f"<b>&ldquo;{w}&rdquo;</b> appears in {r:.1f}% of wire articles "
+                    f"but only {f:.1f}% of sensational ones.")
+        return (f"<b>&ldquo;{w}&rdquo;</b> appears in {f:.1f}% of sensational articles "
+                f"but only {r:.1f}% of wire ones.")
+
+    def max_pct(w):
+        if stats is None or w not in stats["index"]:
+            return 100.0
+        i = stats["index"][w]
+        return max(stats["real_pct"][i], stats["fake_pct"][i])
+
+    if p_real >= 0.65:
+        head = (f"The model leaned towards <b>wire-agency style</b> ({real_pct}% wire vs {fake_pct}% sensational) "
+                "because the strongest word signals in this text match how wire articles are written in the training data.")
+        main = [reason(w, "wire") for w in wire_words[:3]]
+        counter = [reason(w, "sensational") for w in sens_words[:2]]
+        counter_title = "Signals that pulled the other way (not strong enough):"
+        shown = wire_words[:3]
+    elif p_real <= 0.35:
+        head = (f"The model leaned towards <b>sensational style</b> ({fake_pct}% sensational vs {real_pct}% wire) "
+                "because the strongest word signals in this text match how sensational / low-credibility articles are written in the training data.")
+        main = [reason(w, "sensational") for w in sens_words[:3]]
+        counter = [reason(w, "wire") for w in wire_words[:2]]
+        counter_title = "Signals that pulled the other way (not strong enough):"
+        shown = sens_words[:3]
+    else:
+        head = (f"The model could <b>not decide</b> ({real_pct}% wire vs {fake_pct}% sensational) "
+                "because the word signals on both sides are about equally strong.")
+        main = ([reason(w, "wire") for w in wire_words[:2]] +
+                [reason(w, "sensational") for w in sens_words[:2]])
+        counter, counter_title = [], ""
+        shown = wire_words[:2] + sens_words[:2]
+
+    html = f"<p>{head}</p><p><b>Strongest signals:</b></p><ul>" + "".join(f"<li>{m}</li>" for m in main) + "</ul>"
+    if counter:
+        html += f"<p><b>{counter_title}</b></p><ul>" + "".join(f"<li>{c}</li>" for c in counter) + "</ul>"
+
+    rare = [w for w in shown if max_pct(w) < 3]
+    if stats is not None and rare:
+        html += ("<p><small>Some highlighted words (for example &ldquo;" + rare[0] +
+                 "&rdquo;) are rare in the training data, so they give only a weak push.</small></p>")
+
+    html += ("<p><small>Remember: this explains the writing <b>style</b> the model learned, not whether the facts are true. "
+             "Almost all wire-style articles in the training data come from one agency (Reuters), "
+             "so ordinary words can work as an &ldquo;agency style&rdquo; marker.</small></p>")
+    return html
+
+
 def use_example(text):
     st.session_state["news_text"] = text
 
@@ -834,6 +892,14 @@ elif page == "🔍 Analyze News":
             </div>
             """, unsafe_allow_html=True)
 
+            summary_html = overall_summary(wire_words, sens_words, p_real, stats)
+            st.markdown(f"""
+            <div class="card">
+                <h3>🧾 Overall: why did it lean this way?</h3>
+                {summary_html}
+            </div>
+            """, unsafe_allow_html=True)
+
             tips_html = "".join(f"<li>{t}</li>" for t in TIPS)
             st.markdown(f"""
             <div class="card">
@@ -872,9 +938,9 @@ elif page == "ℹ️ About Project":
     with col1:
         st.markdown("""
 <div style="border:1px solid rgba(79,70,229,0.35); border-top:4px solid #4f46e5; border-radius:14px; padding:1.6rem 1.2rem; text-align:center; background:rgba(79,70,229,0.06);">
-  <p style="font-size:2.8rem; margin:0 0 0.5rem 0;">&#128104;&#8205;&#128187;</p>
+  <p style="font-size:2.8rem; margin:0 0 0.5rem 0;">&#128104;&#8203;&#128187;</p>
   <p style="font-size:1.2rem; font-weight:800; margin:0 0 0.4rem 0; color:var(--text-primary);">Muhammad Rehan Farooq</p>
-  <p style="display:inline-block; font-size:0.75rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; margin:0 0 0.6rem 0; padding:0.2rem 0.7rem; border-radius:999px; background:#4f46e5; color:#fff;">&#11088; Team Leader</p>
+  <p style="font-size:1rem; font-weight:700; margin:0 0 0.4rem 0; color:#4f46e5;">&#128081; Team Leader</p>
   <p style="font-size:1rem; margin:0; color:var(--text-secondary);">&#129302; AI &amp; Data Science</p>
 </div>
 """, unsafe_allow_html=True)
@@ -882,7 +948,7 @@ elif page == "ℹ️ About Project":
     with col2:
         st.markdown("""
 <div style="border:1px solid rgba(219,39,119,0.35); border-top:4px solid #db2777; border-radius:14px; padding:1.6rem 1.2rem; text-align:center; background:rgba(219,39,119,0.06);">
-  <p style="font-size:2.8rem; margin:0 0 0.5rem 0;">&#128105;&#8205;&#128187;</p>
+  <p style="font-size:2.8rem; margin:0 0 0.5rem 0;">&#128105;&#8203;&#128187;</p>
   <p style="font-size:1.2rem; font-weight:800; margin:0 0 0.4rem 0; color:var(--text-primary);">Habiba Siddique</p>
   <p style="font-size:1rem; margin:0; color:var(--text-secondary);">&#129504; Machine Learning &amp; Web Development</p>
 </div>
