@@ -14,10 +14,9 @@ the Kaggle "Fake and Real News Dataset".
 3. [Setup and installation](#setup-and-installation)
 4. [AI methodology and implementation](#ai-methodology-and-implementation)
 5. [AI model names and API usage](#ai-model-names-and-api-usage)
-6. [Product screenshots](#product-screenshots)
-7. [Team member contributions](#team-member-contributions)
-8. [Limitations](#limitations)
-9. [Dataset credit](#dataset-credit)
+6. [Team member contributions](#team-member-contributions)
+7. [Limitations](#limitations)
+8. [Dataset credit](#dataset-credit)
 
 ## Problem statement and solution
 
@@ -58,7 +57,6 @@ articles in the training data. It also states clearly what it cannot do: it judg
 ├── train_model.py         # Trains the model -> model/fake_news_model.joblib
 ├── build_word_stats.py    # Builds per-word statistics -> model/word_stats.joblib
 ├── requirements.txt       # Pinned dependencies
-├── screenshots/           # Images used in this README
 ├── model/                 # Saved model files (needed to run the app)
 └── data/                  # Dataset CSVs (not included, see below)
 ```
@@ -140,16 +138,6 @@ read as real-world accuracy.
 
 NewsLens does not call any external AI service, API or large language model, and no API key is needed. The model is
 trained by us and runs locally inside the app, so articles pasted into the app are not sent to any third party.
-
-## Product screenshots
-
-| Analyze page | Result view |
-|---|---|
-| ![Analyze page](screenshots/analyze.png) | ![Result view](screenshots/result.png) |
-
-| About and limitations | Dark theme |
-|---|---|
-| ![About page](screenshots/about.png) | ![Dark theme](screenshots/dark.png) |
 
 ## Team member contributions
 
